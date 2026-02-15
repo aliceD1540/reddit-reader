@@ -1,0 +1,43 @@
+name = "reddit-reader"
+main = "src/index.ts"
+compatibility_date = "2024-01-01"
+ 
+[observability]
+[observability.logs]
+enabled = true
+invocation_logs = true
+
+# Handle markdown files as text
+[[rules]]
+type = "Text"
+globs = ["**/*.md"]
+fallthrough = true
+
+# Scheduled Worker - runs every hour
+[triggers]
+crons = ["0 * * * *"]
+
+# D1 Database binding
+[[d1_databases]]
+binding = "DB"
+database_name = "reddit-reader-db"
+database_id = "8bcae027-252c-4c48-9595-eb3e688495e8" # Set this after creating the D1 database
+
+# KV Namespace binding
+[[kv_namespaces]]
+binding = "KV"
+id = "9a7991f2cd844df4a9850ae6d8228149" # Set this after creating the KV namespace
+
+# Environment variables (non-secret)
+[vars]
+MIN_REDDIT_SCORE = "100"
+REDDIT_USER_AGENT = "cloudflare:reddit-reader:v1.1 (by /u/grimoire13th)"
+# Subreddits to monitor (comma or plus-separated)
+# Examples: "technology+programming+artificial" or "technology,programming,artificial"
+REDDIT_SUBREDDITS = "technology+programming+artificial+science+gadgets"
+# Gemini AI model name (check https://ai.google.dev/gemini-api/docs/models for available models)
+# Recommended: gemini-2.0-flash-exp (latest), gemini-1.5-flash, gemini-1.5-pro
+GEMINI_MODEL = "gemini-2.5-flash"
+# Debug mode: set to "true" to skip Bluesky posting and output to console
+DEBUG_MODE = "false"
+
