@@ -5,7 +5,7 @@ import { Env } from './types';
 import { Logger } from './utils/logger';
 import { cleanupOldThreads, savePostedThread } from './utils/db';
 import { fetchTrendingPost, formatPostForGemini } from './reddit/fetcher';
-import { generateComment } from './gemini/client';
+import { generateComment } from './llm/client';
 import { postToBluesky } from './bluesky/client';
 import { stripRedditUrls } from './utils/text';
 
@@ -36,8 +36,8 @@ export default {
       const postTitle = redditPost.data.title;
       logger.info(`Found Reddit post: ${redditPost.data.id} - "${postTitle}"`);
       
-      // Step 2: Generate comment using Gemini
-      logger.info('Step 2: Generating comment with Gemini');
+      // Step 2: Generate comment using LLM
+      logger.info('Step 2: Generating comment with LLM');
       const formattedPost = formatPostForGemini(redditPost);
       const comment = await generateComment(env, formattedPost, redditPost.data.permalink);
       

@@ -10,6 +10,7 @@ export interface Env {
   
   // Secrets (set via wrangler secret)
   GEMINI_API_KEY: string;
+  GROQ_API_KEY: string;
   BLUESKY_HANDLE: string;
   BLUESKY_PASSWORD: string;
   
@@ -17,7 +18,9 @@ export interface Env {
   MIN_REDDIT_SCORE: string;
   REDDIT_USER_AGENT: string;
   REDDIT_SUBREDDITS: string; // Comma or plus-separated list of subreddits
-  GEMINI_MODEL: string; // Gemini model name (e.g., gemini-2.0-flash-exp)
+  LLM_PROVIDER: string; // LLM provider to use: "gemini" or "groq" (default: gemini)
+  GEMINI_MODEL: string; // Gemini model name (e.g., gemini-2.5-flash)
+  GROQ_MODEL: string; // Groq model name (e.g., llama-3.3-70b-versatile)
   DEBUG_MODE?: string; // Set to "true" to skip Bluesky posting and output to console
 }
 
@@ -71,6 +74,28 @@ export interface GeminiResponse {
   candidates: {
     content: {
       parts: { text: string }[];
+    };
+  }[];
+}
+
+// Groq API Types
+export interface GroqMessage {
+  role: 'system' | 'user' | 'assistant';
+  content: string;
+}
+
+export interface GroqRequest {
+  model: string;
+  messages: GroqMessage[];
+  temperature?: number;
+  max_tokens?: number;
+}
+
+export interface GroqResponse {
+  choices: {
+    message: {
+      role: string;
+      content: string;
     };
   }[];
 }

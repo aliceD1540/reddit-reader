@@ -35,9 +35,14 @@ REDDIT_USER_AGENT = "cloudflare:reddit-reader:v1.1 (by /u/grimoire13th)"
 # Subreddits to monitor (comma or plus-separated)
 # Examples: "technology+programming+artificial" or "technology,programming,artificial"
 REDDIT_SUBREDDITS = "technology+programming+artificial+science+gadgets"
+# LLM Provider to use: "gemini" or "groq" (default: gemini)
+LLM_PROVIDER = "groq"
 # Gemini AI model name (check https://ai.google.dev/gemini-api/docs/models for available models)
-# Recommended: gemini-2.0-flash-exp (latest), gemini-1.5-flash, gemini-1.5-pro
+# Recommended: gemini-2.5-flash (latest), gemini-1.5-flash, gemini-1.5-pro
 GEMINI_MODEL = "gemini-2.5-flash"
+# Groq model name (check https://console.groq.com/docs/models for available models)
+# Recommended: llama-3.3-70b-versatile, mixtral-8x7b-32768
+GROQ_MODEL = "llama-3.3-70b-versatile"
 # Debug mode: set to "true" to skip Bluesky posting and output to console
 DEBUG_MODE = "false"
 
