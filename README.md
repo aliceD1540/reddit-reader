@@ -1,11 +1,12 @@
 # Reddit Reader Bot
 
-RedditのトレンドをピックアップしてAI（Gemini/Groq）でコメントを生成し、Blueskyに投稿するCloudflare Workers Botです。
+RedditのトレンドをピックアップしてAI（Cloudflare Workers AI/Gemini/Groq）でコメントを生成し、Blueskyに投稿するCloudflare Workers Botです。
 
 ## 機能
 
 - Redditの人気スレッドを自動取得
-- Gemini AIまたはGroqで猫のペルソナを使った日本語コメントを生成
+- Cloudflare Workers AI、Gemini AI、またはGroqで猫のペルソナを使った日本語コメントを生成
+- **複数のAIプロバイダーをサポート**し、レート制限時に自動フォールバック
 - Blueskyに自動投稿
 - 投稿済みスレッドの重複チェック
 - Cloudflare Workers Scheduled Workerとして定期実行
@@ -13,11 +14,12 @@ RedditのトレンドをピックアップしてAI（Gemini/Groq）でコメン�
 ## 技術スタック
 
 - **Cloudflare Workers**: サーバーレス実行環境
+- **Cloudflare Workers AI**: Cloudflare統合のAIモデル（推奨）
 - **Cloudflare D1**: 投稿履歴を保存するSQLiteデータベース
 - **Cloudflare KV**: Reddit OAuthトークンのキャッシュ
 - **TypeScript**: 型安全な開発
 - **Reddit API**: トレンド取得
-- **Gemini API / Groq API**: コメント生成（選択可能）
+- **Gemini API / Groq API**: 代替コメント生成（オプション）
 - **Bluesky (AT Protocol)**: 投稿先SNS
 
 ## セットアップ
@@ -29,7 +31,13 @@ RedditのトレンドをピックアップしてAI（Gemini/Groq）でコメン�
 
 #### LLM API（いずれか必須）
 
-**Groq API（推奨）**
+**Cloudflare Workers AI（推奨）**
+- 追加のAPIキー不要！Cloudflare Workers環境に統合されています
+- 設定は `wrangler.toml` の `CLOUDFLARE_AI_MODEL` で指定
+- 利用可能なモデル: [Cloudflare Workers AIモデル一覧](https://developers.cloudflare.com/workers-ai/models/)
+- 推奨モデル: `@cf/meta/llama-3.1-8b-instruct`
+
+**Groq API**
 1. https://console.groq.com にアクセス
 2. アカウントを作成
 3. API Keysページで新しいキーを作成してメモ
@@ -40,7 +48,7 @@ RedditのトレンドをピックアップしてAI（Gemini/Groq）でコメン�
 2. API Keyを作成してメモ
 
 > [!TIP]
-> GroqはGeminiよりもAPI利用制限が緩いため、推奨されています。
+> **Cloudflare Workers AIが推奨されています**。追加のAPIキーが不要で、Cloudflare環境に統合されているため管理が簡単です。また、複数のAIプロバイダーを設定しておけば、レート制限エラー（429）時に自動的に次のプロバイダーへフォールバックします。
 
 #### Bluesky
 - Blueskyのハンドル（例: yourname.bsky.social）とパスワード
@@ -77,9 +85,19 @@ npx wrangler d1 migrations apply reddit-reader-db
 
 ### 4. シークレットの設定
 
-使用するLLMプロバイダーに応じて、対応するAPI Keyを設定してください。
+**Cloudflare Workers AIのみを使用する場合（推奨）**
 
-**Groqを使用する場合（推奨）**
+Cloudflare Workers AIは追加のAPIキーが不要です！Blueskyの認証情報のみ設定してください：
+
+```bash
+npx wrangler secret put BLUESKY_HANDLE
+# プロンプトに従ってBlueskyハンドルを入力
+
+npx wrangler secret put BLUESKY_PASSWORD
+# プロンプトに従ってBlueskyパスワードを入力
+```
+
+**Groqも使用する場合（フォールバック用）**
 
 ```bash
 npx wrangler secret put GROQ_API_KEY
@@ -92,7 +110,7 @@ npx wrangler secret put BLUESKY_PASSWORD
 # プロンプトに従ってBlueskyパスワードを入力
 ```
 
-**Geminiを使用する場合**
+**Geminiも使用する場合（フォールバック用）**
 
 ```bash
 npx wrangler secret put GEMINI_API_KEY
@@ -106,7 +124,7 @@ npx wrangler secret put BLUESKY_PASSWORD
 ```
 
 > [!NOTE]
-> 両方のAPI Keyを設定しておけば、`wrangler.toml`の`LLM_PROVIDER`設定で簡単に切り替えられます。
+> 複数のAPI Keyを設定しておけば、`wrangler.toml`の`LLM_PRIORITY`設定で自動フォールバックが有効になります。レート制限エラー時に次のプロバイダーへ自動的に切り替わります。
 
 ## 開発
 
@@ -180,20 +198,37 @@ npm run deploy
 
 ## 設定のカスタマイズ
 
-### LLMプロバイダーの変更
+### LLMプロバイダーの優先順位設定
 
-`wrangler.toml` の `LLM_PROVIDER` を変更してください。
+`wrangler.toml` の `LLM_PRIORITY` で、使用するAIプロバイダーの優先順位を設定できます。
 
 ```toml
-# Groqを使用する場合（推奨）
-LLM_PROVIDER = "groq"
+# Cloudflare Workers AIを最優先、レート制限時はGroq、その次にGeminiへフォールバック
+LLM_PRIORITY = "cloudflare,groq,gemini"
 
-# Geminiを使用する場合
-LLM_PROVIDER = "gemini"
+# Groqのみ使用（フォールバックなし）
+LLM_PRIORITY = "groq"
+
+# Geminiを最優先、レート制限時はGroqへフォールバック
+LLM_PRIORITY = "gemini,groq"
 ```
 
-> [!NOTE]
-> Groqは無料プランでも十分な利用制限があり、Geminiよりも制限に達しにくいため推奨されています。
+> [!IMPORTANT]
+> **自動フォールバック機能**: いずれかのプロバイダーが429エラー（レート制限）を返した場合、自動的に次のプロバイダーへフォールバックします。これにより、API制限を気にせず安定稼働できます。
+
+**利用可能なプロバイダー:**
+- `cloudflare`: Cloudflare Workers AI（追加APIキー不要、推奨）
+- `groq`: Groq API（外部サービス、APIキー必要）
+- `gemini`: Gemini API（外部サービス、APIキー必要）
+
+### LLMプロバイダーの変更（レガシー）
+
+後方互換性のため、`wrangler.toml` の `LLM_PROVIDER` も使用できますが、`LLM_PRIORITY` の使用を推奨します。
+
+```toml
+# 単一プロバイダーを使用する場合（フォールバックなし）
+LLM_PROVIDER = "cloudflare"
+```
 
 ### 監視するサブレディットの変更
 
@@ -249,6 +284,22 @@ GEMINI_MODEL = "gemini-2.5-flash"
 > [!NOTE]
 > 最新のモデル情報は [Gemini APIドキュメント](https://ai.google.dev/gemini-api/docs/models) をご確認ください。
 
+### Cloudflare Workers AIモデルの変更
+
+`wrangler.toml` の `CLOUDFLARE_AI_MODEL` を変更してください。
+
+```toml
+CLOUDFLARE_AI_MODEL = "@cf/meta/llama-3.1-8b-instruct"
+```
+
+利用可能なモデル（2026年2月時点）：
+- `@cf/meta/llama-3.1-8b-instruct` - LLama 3.1 8Bモデル（推奨）
+- `@cf/meta/llama-3.2-3b-instruct` - より軽量なLLama 3.2 3Bモデル
+- その他多数のモデルが利用可能
+
+> [!NOTE]
+> 最新のモデル情報は [Cloudflare Workers AIドキュメント](https://developers.cloudflare.com/workers-ai/models/) をご確認ください。
+
 ### 最小スコアの変更
 
 `wrangler.toml` の `MIN_REDDIT_SCORE` を変更してください（デフォルト: 100）。
@@ -264,7 +315,7 @@ Cron形式の例:
 
 ### コメントペルソナの変更
 
-`commentator-persona.md` を編集してください。このファイルはGeminiとGroqの両方で使用されます。
+`commentator-persona.md` を編集してください。このファイルはすべてのLLMプロバイダー（Cloudflare Workers AI、Gemini、Groq）で使用されます。
 
 ## トラブルシューティング
 
@@ -276,12 +327,18 @@ Cron形式の例:
 ### "Gemini API request failed"
 - Gemini API Keyが有効か確認
 - APIの利用制限に達していないか確認
-- 制限に達した場合は、`LLM_PROVIDER` を `"groq"` に変更してGroqを使用することを検討してください
+- 制限に達した場合は、`LLM_PRIORITY` に `"cloudflare,groq,gemini"` を設定して自動フォールバックを有効にすることを検討してください
 
 ### "Groq API request failed"
 - Groq API Keyが有効か確認
 - APIの利用制限に達していないか確認
 - モデル名が正しいか確認（[利用可能なモデル](https://console.groq.com/docs/models)を確認）
+- 制限に達した場合は、`LLM_PRIORITY` に `"cloudflare,groq,gemini"` を設定して自動フォールバックを有効にすることを検討してください
+
+### "Cloudflare AI request failed"
+- AI bindingが正しく設定されているか確認（`wrangler.toml` の `[ai]` セクション）
+- モデル名が正しいか確認（[利用可能なモデル](https://developers.cloudflare.com/workers-ai/models/)を確認）
+- Cloudflare Workersの制限に達していないか確認
 
 ### "Failed to post to Bluesky"
 - Blueskyのハンドルとパスワードが正しいか確認

@@ -8,6 +8,9 @@ export interface Env {
   // KV Namespace binding (not used anymore, but kept for future use)
   KV: KVNamespace;
   
+  // AI binding for Cloudflare Workers AI
+  AI: Ai;
+  
   // Secrets (set via wrangler secret)
   GEMINI_API_KEY: string;
   GROQ_API_KEY: string;
@@ -18,9 +21,11 @@ export interface Env {
   MIN_REDDIT_SCORE: string;
   REDDIT_USER_AGENT: string;
   REDDIT_SUBREDDITS: string; // Comma or plus-separated list of subreddits
-  LLM_PROVIDER: string; // LLM provider to use: "gemini" or "groq" (default: gemini)
+  LLM_PROVIDER: string; // LLM provider to use: "gemini", "groq", or "cloudflare" (default: gemini) - deprecated, use LLM_PRIORITY instead
+  LLM_PRIORITY: string; // Priority list of LLM providers (comma-separated, e.g., "cloudflare,groq,gemini")
   GEMINI_MODEL: string; // Gemini model name (e.g., gemini-2.5-flash)
   GROQ_MODEL: string; // Groq model name (e.g., llama-3.3-70b-versatile)
+  CLOUDFLARE_AI_MODEL: string; // Cloudflare AI model name (e.g., @cf/meta/llama-3.1-8b-instruct)
   DEBUG_MODE?: string; // Set to "true" to skip Bluesky posting and output to console
 }
 
@@ -98,6 +103,20 @@ export interface GroqResponse {
       content: string;
     };
   }[];
+}
+
+// Cloudflare Workers AI Types
+export interface CloudflareAIMessage {
+  role: 'system' | 'user' | 'assistant';
+  content: string;
+}
+
+export interface CloudflareAIRequest {
+  messages: CloudflareAIMessage[];
+}
+
+export interface CloudflareAIResponse {
+  response: string;
 }
 
 // Database Types

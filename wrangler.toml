@@ -13,6 +13,10 @@ type = "Text"
 globs = ["**/*.md"]
 fallthrough = true
 
+# AI binding for Cloudflare Workers AI
+[ai]
+binding = "AI"
+
 # Scheduled Worker - runs every hour
 [triggers]
 crons = ["0 * * * *"]
@@ -35,7 +39,11 @@ REDDIT_USER_AGENT = "cloudflare:reddit-reader:v1.1 (by /u/grimoire13th)"
 # Subreddits to monitor (comma or plus-separated)
 # Examples: "technology+programming+artificial" or "technology,programming,artificial"
 REDDIT_SUBREDDITS = "technology+programming+artificial+science+gadgets"
-# LLM Provider to use: "gemini" or "groq" (default: gemini)
+# LLM Priority (comma-separated list of providers to try in order)
+# Supported providers: "cloudflare", "groq", "gemini"
+# Will automatically fall back to next provider on 429 (rate limit) errors
+LLM_PRIORITY = "cloudflare,groq,gemini"
+# Legacy: LLM Provider to use (deprecated, use LLM_PRIORITY instead)
 LLM_PROVIDER = "groq"
 # Gemini AI model name (check https://ai.google.dev/gemini-api/docs/models for available models)
 # Recommended: gemini-2.5-flash (latest), gemini-1.5-flash, gemini-1.5-pro
@@ -43,6 +51,9 @@ GEMINI_MODEL = "gemini-2.5-flash"
 # Groq model name (check https://console.groq.com/docs/models for available models)
 # Recommended: llama-3.3-70b-versatile, mixtral-8x7b-32768
 GROQ_MODEL = "llama-3.3-70b-versatile"
+# Cloudflare Workers AI model name (check https://developers.cloudflare.com/workers-ai/models/ for available models)
+# Recommended: @cf/meta/llama-3.1-8b-instruct, @cf/meta/llama-3.2-3b-instruct
+CLOUDFLARE_AI_MODEL = "@cf/meta/llama-3.1-8b-instruct"
 # Debug mode: set to "true" to skip Bluesky posting and output to console
 DEBUG_MODE = "false"
 
